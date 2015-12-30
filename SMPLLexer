@@ -1,0 +1,139 @@
+/* Specification for ECOLI tokens */
+
+// user customisations
+import java_cup.runtime.*;
+
+%%
+
+%cup
+%public
+
+%class SMPLLexer
+
+%type java_cup.runtime.Symbol
+
+%eofval{
+	return new Symbol(sym.EOF);
+%eofval}
+
+%state STRING
+
+%state COMMENT
+
+%char
+%line
+
+%{
+    public int getChar()
+    {
+	return yychar + 1;
+    }
+
+    public int getLine()
+    {
+	return yyline + 1;
+    }
+
+    public String getText()
+    {
+	return yytext();
+    }
+%}
+      
+nl = [\n\r]
+
+cc = [\b\f]|{nl}
+
+ws = ({cc}|[\t" "])
+
+num = [0-9]
+alpha = [A-Za-z_]
+char = [+-*#.?!]
+alphanum = ({alpha}|{num})
+alnumextend = ^{alphanum}({char}|{alphanum})*
+
+COMMENT_TEXT=([^/*\n]|[^*\n]"/"[^*\n]|[^/\n]"*"[^/\n]|"*"[^/\n]|"/"[^*\n])*
+
+%%
+<YYINITIAL>		"."	{ //. on a line by itself is EOF
+			  return new Symbol(sym.EOF);}
+
+<YYINITIAL>    {nl} {
+                        //skip newline, but reset char counter
+                        yychar = 0;
+                      }
+<YYINITIAL>    \/\/.*  { // ignore line comments
+                      }
+<YYINITIAL>    /\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+/  { // ignore block comments - (source - http://blog.ostermiller.org/find-comment)
+                      }
+<YYINITIAL>    {ws} { // ignore whitespace
+                      }
+
+<YYINITIAL>    ";" { return new Symbol(sym.SEMI); }
+<YYINITIAL>    "(" { return new Symbol(sym.LPAREN); }
+<YYINITIAL>    ")" { return new Symbol(sym.RPAREN); }
+
+<YYINITIAL>    ":=" { return new Symbol(sym.ASSIGN); }
+
+<YYINITIAL>    or|OR { return new Symbol(sym.OR); }
+
+<YYINITIAL>    and|AND { return new Symbol(sym.AND); }
+
+<YYINITIAL>    not|NOT { return new Symbol(sym.NOT); }
+
+<YYINITIAL>    print|PRINT { return new Symbol(sym.PRINT); }
+
+<YYINITIAL>    println|PRINTLN { return new Symbol(sym.PRINTLN); }
+
+<YYINITIAL>	   "|" { return new Symbol(sym.BOR); }
+<YYINITIAL>    "&" { return new Symbol(sym.BAND); }
+<YYINITIAL>    "~" { return new Symbol(sym.BNOT); }
+
+<YYINITIAL>    "<"|">"|"<="|">="|"=="|"!="  { return new Symbol(sym.CMP, yytext()); }
+
+<YYINITIAL>    "+" { return new Symbol(sym.PLUS); }
+<YYINITIAL>    "++" { return new Symbol(sym.INC); }
+<YYINITIAL>    "-" { return new Symbol(sym.MINUS); }
+<YYINITIAL>    "--" { return new Symbol(sym.DEC); }
+<YYINITIAL>    "*" { return new Symbol(sym.TIMES); }
+<YYINITIAL>    "/" { return new Symbol(sym.DIV); }
+<YYINITIAL>    "%" { return new Symbol(sym.MOD); }
+<YYINITIAL>    "^" { return new Symbol(sym.POW); }
+
+<COMMENT> {COMMENT_TEXT} { }
+
+
+<YYINITIAL>	{alnumextend} {
+			// IDENTIFIER
+			return new Symbol(sym.VAR, yytext()); }
+
+<YYINITIAL>    	{num}+ {
+	       		// INTEGER
+	       		return new Symbol(sym.INTEGER, new Integer(yytext()));
+	       	}
+
+<YYINITIAL>     0?"."{num}+ {
+			// FRACTION
+			return new Symbol(sym.FRACTION, new Double(yytext()));
+		}
+
+<YYINITIAL>	{num}+"."{num}+ {
+			return new Symbol(sym.REAL, new Double(yytext()));
+		}
+
+<YYINITIAL> "\#x"{num}+ {
+			int val = Integer.decode("0"+yytext().substring(1,yytext().length()));
+			String val1 = "" + val;
+			return new Symbol(sym.HEXINT, new Integer(val1));
+		}
+
+<YYINITIAL> "\#b"{num}+ {
+			int val = Integer.parseInt(yytext().substring(2,yytext().length()), 2);
+			String val1 = "" + val;
+			return new Symbol(sym.BININT, new Integer(val1));
+		}
+
+<YYINITIAL>	. {
+		    throw new java.io.IOException("Unrecognised character: " +
+							yytext());
+		}

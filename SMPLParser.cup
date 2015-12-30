@@ -1,0 +1,161 @@
+/*CHAT
+
+*/
+
+import java_cup.runtime.*;
+import java.io.*;
+import java.util.*;
+
+/* Preliminaries to set up and use the scanner.  */
+action code {:          :};
+
+parser code {:
+		SMPLLexer lexer;
+
+		public SMPLParser(SMPLLexer l) {
+                    super(l);
+                    lexer = l;
+                }
+
+		public SMPLParser(String file) throws FileNotFoundException {
+	            this(new SMPLLexer(new FileReader(file)));
+		}
+
+                public SMPLParser(InputStream is) {
+                    this(new SMPLLexer(is));
+                }
+
+		public void report_error(String message, Object info) {
+		    System.err.println(message + info);
+		}
+
+		public void syntax_error(Symbol cur_token) {
+		    System.err.print("Line " + lexer.getLine() +
+				     " near char " + lexer.getChar() + ": ");
+		    report_error("Syntax error while reading: ", cur_token);
+		    System.err.println ("Last token read is " +
+					 lexer.getText());
+		}
+	    :};
+
+init with {:
+		// No longer necessary		
+	  :};
+scan with {:
+		try {
+		    return lexer.next_token();
+		} catch (java.io.IOException ioe) {
+		    System.out.println ("Unrecognised token at line: " + 
+                                lexer.getLine() + ", char: " + lexer.getChar());
+		    System.out.println(ioe.getMessage());
+		    throw ioe;
+		}
+	  :};
+
+/* Terminals (tokens returned by the scanner). */
+
+/* Arithmetic operators */ 
+terminal PLUS, INC, MINUS, DEC, TIMES, DIV, MOD, POW, EQUAL, ASSIGN;
+
+/* Punctuation */
+terminal LPAREN, RPAREN;
+terminal SEMI;
+
+terminal PRINT, PRINTLN;
+terminal String CMP, NOT, AND, OR, BOR, BAND, BNOT;
+
+/*VALUES*/
+terminal Integer INTEGER;
+terminal Integer HEXINT;
+terminal Integer BININT;
+terminal Double FRACTION;
+terminal Double REAL;
+terminal String VAR;
+terminal String str;
+
+/* Non terminals */
+non terminal SMPLProgram program;
+
+non terminal SMPLSequence stmtList;
+non terminal SMPLStatement stmt;
+non terminal SMPLPrintStmt printStatement;
+
+non terminal SMPLAssignment assignment;
+
+non terminal ASTExp<AIRExp> expression, term, cFactor, power, factor, cmpExp, orExp, andExp, notExp, bitExp;
+
+non terminal empty;
+
+/* Grammar rules */
+
+start with program;
+
+program ::= stmtList:seq {:
+		RESULT = new SMPLProgram(seq);
+	    :};
+
+stmtList ::= stmtList:seq stmt:s {: 
+				seq.addStatement(s);
+		    	RESULT = seq; :} |
+	         empty {: RESULT = new SMPLSequence(); :};
+
+stmt ::=   assignment:a SEMI{: RESULT = a; :} |
+		   printStatement:p SEMI{: RESULT = p; :};
+
+//STATEMENTS
+
+assignment ::= VAR:v ASSIGN orExp:c {:RESULT = new SMPLAssignment(v, c); :};
+
+printStatement ::=  PRINT LPAREN orExp:c RPAREN{: RESULT = new SMPLPrintStmt("", c); :} |
+					PRINT LPAREN str:c RPAREN {: RESULT =  new SMPLPrintStmt("", c); :} |
+					PRINTLN LPAREN str:c RPAREN {: RESULT = new SMPLPrintStmt("\n", c); :} |
+					PRINTLN LPAREN orExp:c RPAREN {: RESULT = new SMPLPrintStmt("\n", c); :};
+
+//TOP LEVEL EXPRESSIONS
+
+orExp ::= orExp:o OR andExp:a {: RESULT = new ASTBinaryExp<AIRExp>("or", o, a); :} |
+		   andExp:a {: RESULT = a; System.out.println("orExp"); :};
+ 
+andExp ::= andExp:a AND notExp:n {: RESULT = new ASTBinaryExp<AIRExp>("and", a, n); :} |
+			notExp:n {: RESULT = n; System.out.println("andExp"); :};
+
+notExp ::= NOT cmpExp:c {: RESULT = new ASTUnaryExp<AIRExp>("not", c); :} |
+			cmpExp:c {: RESULT = c; System.out.println("notExp"); :};
+
+
+cmpExp ::= cmpExp:c CMP:m bitExp:e {: RESULT = new ASTBinaryExp<AIRExp>(m, c, e); :} |
+			   bitExp:e {: RESULT = e; System.out.println("cmpExp"); :};
+
+bitExp ::= bitExp:b BOR expression:e {: RESULT = new ASTBinaryExp<AIRExp>("|", b, e); :} |
+		   bitExp:b BAND expression:e {: RESULT = new ASTBinaryExp<AIRExp>("&", b, e); :} |
+		   expression:e {: RESULT = e; System.out.println("bitExp"); :};
+
+expression ::=  expression:e PLUS term:t {: RESULT = new ASTBinaryExp<AIRExp>("+", e, t); :} |
+				expression:e MINUS term:t {: RESULT = new ASTBinaryExp<AIRExp>("-", e, t); :} |
+				expression:e INC {: RESULT = new ASTBinaryExp<AIRExp>("+", e, new AIRExpInt(1)); :} |
+				expression:e DEC {: RESULT = new ASTBinaryExp<AIRExp>("-", e, new AIRExpInt(1)); :} |
+				term:t {: RESULT = t; System.out.println("expression"); :};
+
+term ::= term:t TIMES power:p {: RESULT = new ASTBinaryExp<AIRExp>("*", t,p); :} |
+		 term:t DIV power:p {: RESULT = new ASTBinaryExp<AIRExp>("/", t,p); :} |
+		 term:t MOD power:p {: RESULT = new ASTBinaryExp<AIRExp>("%", t,p); :} |
+		 power:p {: RESULT = p; System.out.println("term"); :}; 
+
+
+
+power ::= power:p POW factor:f {: RESULT = new ASTBinaryExp<AIRExp>("^",p,f); :} |
+		  factor:f {:RESULT = f; System.out.println("power"); :}; 
+
+
+factor ::= 	cFactor:c {: RESULT = c; System.out.println("factor");  :} |
+						BNOT cFactor:c {: RESULT = new ASTUnaryExp<AIRExp>("~", c); :};
+
+cFactor ::= INTEGER:i {: RESULT = new AIRExpInt(i); :} |
+			FRACTION:f {: RESULT = new AIRExpFrac(f); :} |
+            REAL:r {:RESULT = new AIRExpFrac(r); :} |
+		   	HEXINT:h {: RESULT = new AIRExpInt(h); :} |
+            BININT:b {: RESULT = new AIRExpInt(b); :} |
+            LPAREN cmpExp:e RPAREN {: RESULT = e; System.out.println("cFactor - cmpExp"); :};
+
+empty ::= ;
+

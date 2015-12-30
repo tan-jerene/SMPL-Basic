@@ -1,8 +1,8 @@
-# SMPL-Basic
  - Arith functionality
  - Comparison functionality
  - Logic functionality
+ - Comments
  - Not completed:-
  	- Negative numbers
- - Not functional:-
- 	- Print Statement
+ - Not Working
+	- Print Statements

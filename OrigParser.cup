@@ -1,0 +1,332 @@
+/*CHAT
+
+*/
+
+import java_cup.runtime.*;
+import java.io.*;
+import java.util.*;
+
+/* Preliminaries to set up and use the scanner.  */
+action code {:          :};
+
+parser code {:
+		SMPLLexer lexer;
+
+		public SMPLParser(SMPLLexer l) {
+                    super(l);
+                    lexer = l;
+                }
+
+		public SMPLParser(String file) throws FileNotFoundException {
+	            this(new SMPLLexer(new FileReader(file)));
+		}
+
+                public SMPLParser(InputStream is) {
+                    this(new SMPLLexer(is));
+                }
+
+		public void report_error(String message, Object info) {
+		    System.err.println(message + info);
+		}
+
+		public void syntax_error(Symbol cur_token) {
+		    System.err.print("Line " + lexer.getLine() +
+				     " near char " + lexer.getChar() + ": ");
+		    report_error("Syntax error while reading: ", cur_token);
+		    System.err.println ("Last token read is " +
+					 lexer.getText());
+		}
+	    :};
+
+init with {:
+		// No longer necessary		
+	  :};
+scan with {:
+		try {
+		    return lexer.next_token();
+		} catch (java.io.IOException ioe) {
+		    System.out.println ("Unrecognised token at line: " + 
+                                lexer.getLine() + ", char: " + lexer.getChar());
+		    System.out.println(ioe.getMessage());
+		    throw ioe;
+		}
+	  :};
+
+/* Terminals (tokens returned by the scanner). */
+
+/* Keywords 
+terminal ASSIGN, LET,BE, WAIT, PRINTLN, BINFUNC, BINQUERY, PAIR, CAR, CDR, CALL;
+terminal LIST, SUBSTR, EQV, IF, THEN, ELSE, CMP, NOT, AND, OR, CASE;
+terminal  IN, DEF, PROC, PRINT, READ, READINT, LAZY, QUERY, SIZE, CON, ELIST;*/
+
+/*BOOLEAN
+terminal TRUE, FALSE;*/
+
+/* Arithmetic operators */ 
+terminal PLUS, INC, MINUS, DEC, TIMES, DIV, MOD, POW, EQUAL, ASSIGN;
+
+/* Punctuation */
+terminal LPAREN, RPAREN, LBRACKET, RBRACKET, LCBRACKET, RCBRACKET;
+terminal SEMI;
+/* Punctuation 
+terminal COMMA, COLON, DOT, VECHEAD, VECEND;*/
+
+terminal PRINT, PRINTLN;
+terminal String CMP, NOT, AND, OR, BOR, BAND, BNOT;
+/*VALUES*/
+terminal Integer INTEGER;
+terminal Integer HEXINT;
+terminal Integer BININT;
+terminal Double FRACTION;
+terminal Double REAL;
+terminal String VAR;
+//terminal String STRING;
+//terminal String CHAR;
+
+/* Non terminals */
+non terminal SMPLProgram program;
+
+non terminal SMPLSequence stmtList;
+non terminal SMPLStatement stmt;
+non terminal SMPLPrintStmt printStatement;
+
+non terminal SMPLAssignment assignment;
+/*
+non terminal SMPLCaseStmt caseStmt;
+non terminal SMPLDefine define;
+non terminal SMPLIfStmt ifstatement;
+non terminal SMPLMultiAssign multiassign;
+non terminal SMPLPairQ pairQExp;
+non terminal SMPLReadStmt readStmt;
+non terminal SMPLVecStmt vecStmt;
+non terminal SMPLStatement waitStmt;
+*/
+//non terminal ASTExp<AIRExp> tlExp;
+non terminal ASTExp<AIRExp> expression, term, cFactor, power, factor, cmpExp, orExp, andExp, notExp, bitExp;
+/*
+non terminal ASTExp boolFactor;
+non terminal SMPLBindExp bindExp;
+non terminal SMPLCallExp callExp;
+non terminal SMPLCarExp carExp;
+non terminal SMPLCdrExp cdrExp;
+non terminal SMPLConcatExp concatExp;
+non terminal SMPLEqualExp equalExp;
+non terminal SMPLEqvExp eqvExp;
+non terminal SMPLFunCall funCall;
+non terminal SMPLProcExp funDef;
+non terminal SMPLLazyExp lazyExp;
+non terminal SMPLLetExp letExp;
+non terminal SMPLListExp listExp;
+non terminal SMPLPairExp pairExp;
+non terminal SMPLPredConExp predConExp;
+non terminal ArrayList<SMPLPredConExp> predConList;
+non terminal SMPLSubstrExp substrExp;
+non terminal SMPLVecNExp vecNExp;
+non terminal SMPLVecSizeExp vecSizeExp;
+non terminal SMPLVecList vecList;
+
+non terminal ArrayList<String> varList;
+non terminal ArrayList<ASTExp> expList; */  /* non-empty exp list */
+//non terminal ArrayList<ASTExp> expListE;   /* potentially empty exp list */
+
+/*non terminal ArrayList<String> paramList;
+non terminal ArrayList<String> paramListE;*/
+
+non terminal empty;
+
+/* Grammar rules */
+
+start with program;
+
+program ::= stmtList:seq {:
+		RESULT = new SMPLProgram(seq);
+	    :};
+
+stmtList ::= stmtList:seq stmt:s {: 
+				seq.addStatement(s);
+		    	RESULT = seq; :} |
+	         empty {: RESULT = new SMPLSequence(); :};
+
+stmt ::=   assignment:a SEMI{: RESULT = a; :} |
+		   printStatement:p SEMI{: RESULT = p; :} /*|
+		   multiassign:ma SEMI{: RESULT = ma; :} |
+           waitStmt:w SEMI{: RESULT = w; :}|
+		   ifstatement:i SEMI{: RESULT = i; :} |
+		   caseStmt:c SEMI {: RESULT = c; :} |
+           define:d SEMI{: RESULT = d; :} |
+		   funDef:f SEMI{: RESULT = f; :}*/;
+
+//STATEMENTS
+/*ifstatement ::= IF tlExp:c THEN stmtList:s {: new SMPLIfStmt(c, s); :} |
+								IF tlExp:c THEN stmtList:s ELSE stmtList:l {: RESULT = new  SMPLIfStmt(c, s, l); :};
+
+caseStmt ::= CASE LCBRACKET predConList:p RCBRACKET {: RESULT = new SMPLCaseStmt(p); :};
+
+predConExp ::= orExp:n COLON stmtList:t {: RESULT = new SMPLPredConExp(n, t); :};
+
+predConList ::= predConList:l COMMA predConExp:e {: 
+			l.add(e);
+			RESULT = l; 
+		:}|
+		empty {: RESULT = new ArrayList<SMPLPredConExp>(); :};
+
+waitStmt ::= WAIT tlExp:t {:RESULT = new SMPLWaitStmt(t); :};
+*/
+assignment ::= VAR:v ASSIGN orExp:c {:RESULT = new SMPLAssignment(v, c); :};
+
+printStatement ::= PRINT orExp:e {: RESULT = new SMPLPrintStmt("", e); :} |
+				   PRINTLN orExp:e {: RESULT = new SMPLPrintStmt("\n", e); :};
+/*
+assignment ::= VAR:v ASSIGN tlExp:c {:RESULT = new ExpAssign(v, c); :};
+
+multiassign ::= expList:vl ASSIGN tlExp:c {: RESULT = new SMPLMultiAssign(vl,c); :};
+
+*/
+// DEFINITION
+//define	::= DEF VAR:v tlExp:e {: RESULT = new SMPLDefine(v,e); :};
+
+//FUNCTION DEFINITION
+/*funDef ::= PROC LPAREN paramList:p RPAREN stmtList:s {: RESULT = new SMPLProcExp(p, s); :} |
+						PROC LPAREN paramList:p1 DOT paramList:p2 RPAREN stmtList:s {: RESULT = new SMPLProcExp(p, p, s); :} |
+            PROC VAR:v stmtList:s {: RESULT = new SMPLProcExp(id, s); :};*/
+
+//KEYWORD EXPRESSIONS            
+/*bindExp ::= VAR:v BE tlExp:t {: RESULT = new SMPLBindExp(v, t); :};
+
+bindList ::= bindList:bl bindExp:b {: 
+			bl.add(b);
+			RESULT = bl; 
+		:}|
+		empty {: RESULT = new ArrayList<SMPLBindExp>(); :};
+
+callExp ::= CALL LPAREN funDef:fn COMMA listExp:lst RPAREN {: RESULT = new SMPLCallExp(fn, lst); :};
+
+lazyExp ::= LAZY LPAREN tlExp:t RPAREN {: RESULT = new SMPLLazyExp(t); :};
+
+letExp ::= LET LPAREN bindList:b RPAREN stmtList:s {: RESULT = new SMPLLetExp(b, s); :};
+*/
+/*We'll fix this soon - probably very wrong*/
+/*readStmt ::= READ LPAREN RPAREN {:RESULT = new SMPLReadStmt("%s"); :} |
+						READINT LPAREN RPAREN {: RESULT = new SMPLReadStmt("%i"); :};*/
+
+//TOP LEVEL EXPRESSIONS
+/*
+tlExp ::= orExp:oe {: RESULT = oe; :} |
+		  funDef:fd {: RESULT = fd; :} |
+          vecStmt: ve {: RESULT = ve; :} |
+          concatExp: cce {: RESULT = cce; :} |
+          readStmt:re {: RESULT = re; :} |
+          listExp:le {: RESULT = le; :}; 
+          
+listExp ::= LIST LPAREN expList:e RPAREN {: RESULT = new SMPLListExp(e); :} |
+			LBRACKET expList:e RBRACKET {: RESULT = new SMPLListExp(e); :} |
+      		ELIST {: RESULT = new SMPLListExp(); :};
+      
+concatExp ::= listExp:cp CON listExp:le {: RESULT = new SMPLConcatExp(cp, le); :};
+      
+
+vecStmt ::= VECHEAD vecList:v VECEND {: RESULT = new SMPLVecStmt(v); :};
+
+vecList ::= vecList:v COMMA tlExp:size COLON tlExp:val {: 
+            	vecEntry = new VecEntry(size, val);
+            	v.addEntry(size, val);
+				RESULT = v; :} |
+			vecList:v COMMA tlExp:val {: 
+           		vecEntry = new VecEntry(val);
+                v.addEntry(val);
+                RESULT = v; :} |
+            empty {: RESULT = new SMPLVecList(); 
+            
+vecNExp ::= tlExp:ve LBRACKET tlExp:n RBRACKET{: RESULT = new SMPLVecNExp(ve,n); :};
+
+vecSizeExp ::= SIZE LPAREN tlExp: ve RPAREN {: RESULT = new SMPLVecSizeExp(ve); :};
+
+eqvExp ::= EQV LPAREN tlExp:e1 COMMA tlExp:e2 RPAREN {: RESULT = new SMPLEqvExp(e1, e2); :};
+
+equalExp ::= EQUAL LPAREN tlExp:e1 COMMA tlExp:e2 RPAREN {: RESULT = new SMPLEqualExp(e1, e2); :};
+
+substrExp ::= SUBSTR LPAREN tlExp:t COMMA tlExp:i COMMA tlExp:n RPAREN {: RESULT = new SMPLSubstrExp(t, i, n); :};
+
+pairExp ::= PAIR LPAREN tlExp:p1 COMMA tlExp: p2 RPAREN {: RESULT = new SMPLPairExp(p1,p2); :};
+
+pairQExp ::= PAIR QUERY LPAREN tlExp:tl RPAREN {: RESULT = new SMPLPairQ(tl); :};
+
+*/
+orExp ::= orExp:o OR andExp:a {: RESULT = new ASTBinaryExp<AIRExp>("or", o, a); :} |
+		   andExp:a {: RESULT = a; System.out.println("orExp"); :};
+ 
+andExp ::= andExp:a AND notExp:n {: RESULT = new ASTBinaryExp<AIRExp>("and", a, n); :} |
+			notExp:n {: RESULT = n; System.out.println("andExp"); :};
+
+notExp ::= NOT cmpExp:c {: RESULT = new ASTUnaryExp<AIRExp>("not", c); :} |
+			cmpExp:c {: RESULT = c; System.out.println("notExp"); :};
+
+
+cmpExp ::= cmpExp:c CMP:m bitExp:e {: RESULT = new ASTBinaryExp<AIRExp>(m, c, e); :} |
+			   bitExp:e {: RESULT = e; System.out.println("cmpExp"); :};
+
+bitExp ::= bitExp:b BOR expression:e {: RESULT = new ASTBinaryExp<AIRExp>("|", b, e); :} |
+		   bitExp:b BAND expression:e {: RESULT = new ASTBinaryExp<AIRExp>("&", b, e); :} |
+		   expression:e {: RESULT = e; System.out.println("bitExp"); :};
+
+expression ::=  expression:e PLUS term:t {: RESULT = new ASTBinaryExp<AIRExp>("+", e, t); :} |
+				expression:e MINUS term:t {: RESULT = new ASTBinaryExp<AIRExp>("-", e, t); :} |
+				expression:e INC {: RESULT = new ASTBinaryExp<AIRExp>("+", e, new AIRExpInt(1)); :} |
+				expression:e DEC {: RESULT = new ASTBinaryExp<AIRExp>("-", e, new AIRExpInt(1)); :} |
+				term:t {: RESULT = t; System.out.println("expression"); :};
+
+term ::= term:t TIMES power:p {: RESULT = new ASTBinaryExp<AIRExp>("*", t,p); :} |
+		 term:t DIV power:p {: RESULT = new ASTBinaryExp<AIRExp>("/", t,p); :} |
+		 term:t MOD power:p {: RESULT = new ASTBinaryExp<AIRExp>("%", t,p); :} |
+		 power:p {: RESULT = p; System.out.println("term"); :}; 
+
+
+
+power ::= power:p POW factor:f {: RESULT = new ASTBinaryExp<AIRExp>("^",p,f); :} |
+		  factor:f {:RESULT = f; System.out.println("power"); :}; 
+
+
+factor ::= 	cFactor:c {: RESULT = c; System.out.println("factor");  :} |
+						BNOT cFactor:c {: RESULT = new ASTUnaryExp<AIRExp>("~", c); :} |/*
+						LPAREN MINUS cFactor:c RPAREN {: RESULT = new ASTBinaryExp<AIRExp>("-", new AIRExpInt(0), c); :} | 
+			            funCall:f {: RESULT = f; :} |
+			            boolFactor:b {: RESULT = b; :}*/;
+/*           
+funCall ::= VAR:v LPAREN expList:e RPAREN {: RESULT = new SMPLFunCall(v, e); :};
+		   
+boolFactor ::= 	TRUE:b {: RESULT = new ASTBoolExp(True); :} |
+								FALSE: b {: RESULT = new ASTBoolExp(False); :};
+*/
+cFactor ::= INTEGER:i {: RESULT = new AIRExpInt(i); :} |
+			FRACTION:f {: RESULT = new AIRExpFrac(f); :} |
+            REAL:r {:RESULT = new AIRExpFrac(r); :} |
+		   	HEXINT:h {: RESULT = new AIRExpInt(h); :} |
+            BININT:b {: RESULT = new AIRExpInt(b); :} |
+          	//STRING: str {: RESULT = str; :} |
+            LPAREN cmpExp:e RPAREN {: RESULT = e; System.out.println("cFactor - cmpExp"); :};
+/*
+paramListE ::= paramList:lst {: RESULT = lst; :} |
+               empty {: RESULT = new ArrayList<>(); :} ;
+
+paramList ::= paramList:lst COMMA VAR:id {:
+		lst.add(id);
+		RESULT = lst; :} |
+	      VAR:id {:
+		RESULT = new ArrayList<>();
+		RESULT.add(id);
+	      :};
+
+expList ::= expList:lst COMMA orExp:e {:
+	          lst.add(e);
+		  RESULT = lst;
+	     :} |
+	     orExp:e {:
+		  RESULT = new ArrayList<>();
+		  RESULT.add(e);
+	     :}; 
+
+expListE ::= expList:lst {: RESULT = lst; :} |
+	      empty {: RESULT = new ArrayList<>(); :}; 
+*/
+empty ::= ;
+
