@@ -53,6 +53,7 @@ public class SMPLEnvironment<T> {
      */
     public void put(String id, T value) {
 	   dictionary.put(id, value);
+       System.out.println("Im in SMPLenvironment "+ dictionary);
     }
 
     /**

@@ -17,6 +17,7 @@ public class SMPLAssignment extends SMPLStatement {
     public SMPLAssignment(String varName, ASTExp<AIRExp> expression) {
         this.varName = varName; //D;etermines whether print or println; "" - print, "\n" - println
         this.expression = expression; //Value to be printed
+        System.out.println("Im in SMPLAssignment");
     }
 
     public  String getVarName() {

@@ -28,24 +28,29 @@ public class SMPLrepl{
 			repl(System.in, globalEnv);
 	}
 	public static void repl(InputStream is, SMPLContext genv){
-		final String FIRST_PROMPT = "SMPL->";
-		final String NEXT_PROMPT = "... ";
-		BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+		File file = new File ("smpl-tests.smpl");
+		FileInputStream fis = null;
+		BufferedInputStream bis = null;
+		DataInputStream dis = null;
 		try{
-			while (true){
-				System.out.println(FIRST_PROMPT);
-				StringBuffer input = new StringBuffer();
-				String line = reader.readLine();
-				while(line != null && !line.equals(".")){
-					System.out.println(NEXT_PROMPT);
-					input.append("\n");
-					input.append(line);
-					line = reader.readLine();
-				}
+			fis = new FileInputStream(file);
+			bis = new BufferedInputStream(fis);
+			dis = new DataInputStream(bis);
+			String line = dis.readLine();
+			StringBuffer input = new StringBuffer();
+			while (dis.available() !=0){
+				input.append(line);
+				line = dis.readLine();
 
-				StringReader r = new StringReader(new String(input));
-				parseEvalShow(r,genv);
 			}
+			fis.close();
+			bis.close();
+			dis.close();
+			StringReader r = new StringReader(new String (input));
+			parseEvalShow(r,genv);
+		}
+		catch (FileNotFoundException fnf){
+			System.out.println("Could not find file");
 		}
 		catch (IOException ioe){
 			System.out.println("Closing Program");
