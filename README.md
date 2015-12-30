@@ -4,3 +4,5 @@
  - Logic functionality
  - Not completed:-
  	- Negative numbers
+	- Not functional:-
+	 - Print Statement
